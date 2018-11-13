@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  * <p/>
- * Copyright (c) 2016 Riccardo Cardin
+ * Copyright (c) 2016 Andrea Faggin
  * <p/>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,35 +22,43 @@
  * SOFTWARE.
  * <p/>
  *
- * @author Riccardo Cardin
+ * @author Miki Violetto
  * @version 1.0
  * @since 1.0
  */
-
-package it.unipd.math.pcd.actors.exceptions;
+package it.unipd.math.pcd.actors;
 
 /**
- * Thrown to indicate an error during the creation of a new actor of unknown type in a specified
- * {@link it.unipd.math.pcd.actors.ActorSystem actor system}.
+ * Implements message pair.
  *
- * @author Riccardo Cardin
+ * @author Miki Violetto
  * @version 1.0
  * @since 1.0
+ * @param <T> Type of the sender.
+ * @param <U> Type of the message.
  */
-public class NoSuchActorException extends RuntimeException {
+public final class ImplMailMessage<T,U> implements MailMessage<T, U> {
 
-    public NoSuchActorException() {
+    private final T sender;
+
+    private final U message;
+
+    /**
+     * @param sender The sender.
+     * @param message The message.
+     */
+    public ImplMailMessage(T sender, U message) {
+        this.sender = sender;
+        this.message = message;
     }
 
-    public NoSuchActorException(String message) {
-        super(message);
+    @Override
+    public T getSender() {
+        return sender;
     }
 
-    public NoSuchActorException(String message, Throwable cause) {
-        super(message, cause);
+    @Override
+    public U getMessage() {
+        return message;
     }
-
-    public NoSuchActorException(Throwable cause) {
-        super(cause);
-    }
-}
+} 

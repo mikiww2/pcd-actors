@@ -21,15 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * <p/>
- * Please, insert description here.
- *
- * @author Riccardo Cardin
- * @version 1.0
- * @since 1.0
- */
-
-/**
- * Please, insert description here.
  *
  * @author Riccardo Cardin
  * @version 1.0
@@ -55,13 +46,3 @@ public interface ActorRef<T extends Message> extends Comparable<ActorRef> {
      */
     void send(T message, ActorRef to);
 }
-
-
-
-
-
-
-
-
-
-

@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  * <p/>
- * Copyright (c) 2016 Riccardo Cardin
+ * Copyright (c) 2016 Andrea Faggin
  * <p/>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,35 +22,55 @@
  * SOFTWARE.
  * <p/>
  *
- * @author Riccardo Cardin
+ * @author Miki Violetto
  * @version 1.0
  * @since 1.0
  */
-
-package it.unipd.math.pcd.actors.exceptions;
+package it.unipd.math.pcd.actors;
 
 /**
- * Thrown to indicate an error during the creation of a new actor of unknown type in a specified
- * {@link it.unipd.math.pcd.actors.ActorSystem actor system}.
+ * Interface of an Actor's mailbox.
  *
- * @author Riccardo Cardin
+ * @author Miki Violetto
  * @version 1.0
  * @since 1.0
+ * @param <T> Message subtype.
  */
-public class NoSuchActorException extends RuntimeException {
+public interface Mailbox<T extends Message> {
 
-    public NoSuchActorException() {
-    }
+    /**
+     * Push a MailMessage in the mailbox.
+     *
+     * @param message The MailMessage.
+     * @throws ClosedMailboxException If the mailbox is close.
+     */
+    void push(MailMessage<ActorRef<T>,T> message);
 
-    public NoSuchActorException(String message) {
-        super(message);
-    }
+    /**
+     * Return the oldest MailMessage of the mailbox and deletes it from the mailbox.
+     *
+     * @return The oldest MailMessage.
+     * @throws EmptyMailboxException If the mailbox is empty.
+     */
+    MailMessage<ActorRef<T>,T> pop();
 
-    public NoSuchActorException(String message, Throwable cause) {
-        super(message, cause);
-    }
+    /**
+    * Checks if the mailbox have MailMessage.
+    *
+    * @return true if the mailbox is empty, false otherwise
+    */
+    boolean isEmpty();
 
-    public NoSuchActorException(Throwable cause) {
-        super(cause);
-    }
+    /**
+     * Close the mailbox, preventing from accepting new MailMessages.
+     */
+    void setClosed();
+
+    /**
+     * Checks if mailbox isn't close.
+     *
+     * @return true if the mailbox can receive MailMessages, false if it's close
+     */
+    boolean isOpen();
+
 }

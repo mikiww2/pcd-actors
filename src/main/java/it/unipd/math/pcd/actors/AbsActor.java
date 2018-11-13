@@ -21,15 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * <p/>
- * Please, insert description here.
- *
- * @author Riccardo Cardin
- * @version 1.0
- * @since 1.0
- */
-
-/**
- * Please, insert description here.
  *
  * @author Riccardo Cardin
  * @version 1.0
@@ -37,141 +28,142 @@
  */
 package it.unipd.math.pcd.actors;
 
-import java.util.*;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import it.unipd.math.pcd.actors.exceptions.EmptyMailboxException;
+import it.unipd.math.pcd.actors.exceptions.UnsupportedMessageException;
 
 /**
  * Defines common properties of all actors.
  *
  * @author Riccardo Cardin
+ * @author Miki Violetto
  * @version 1.0
  * @since 1.0
  */
 public abstract class AbsActor<T extends Message> implements Actor<T> {
 
     /**
-     * The mailbox that contains the messages that have to be elaborated
-     */
-    private Queue<Packet<T>> mailbox;
-
-    /**
-     * Self-reference of the actor
+     * Self-reference of the actor.
      */
     protected ActorRef<T> self;
 
     /**
-     * Sender of the current message
+     * Sender of the current message.
      */
     protected ActorRef<T> sender;
 
     /**
-     * The actor system
+     * Actor's Mailbox.
      */
-    private ActorSystem system;
+    protected Mailbox<T> mailbox;
 
-    private ActorRunnable task;
+    /**
+     * Lock message's processing process.
+     */
+    protected final Lock lock = new ReentrantLock();
 
-    public AbsActor() {
-        // Initializing the list in a synchronized way
-        this.mailbox = (Queue<Packet<T>>) new LinkedList<Packet<T>>();
-        this.task = new ActorRunnable();
+    /**
+     * Condition for release the lock.
+     */
+    protected final Condition emptyMailbox = lock.newCondition();
+
+    /**
+     * Executor task.
+     */
+    private final Runnable actorRunnable;
+
+    /**
+     * Constructor
+     */
+    protected AbsActor() {
+        this.mailbox = new ImplMailbox<>();
+        this.actorRunnable = new ActorRunnable();
+        ImplActorSystem.getInstance().addActorRunnable(this.actorRunnable);
     }
 
     /**
      * Sets the self-referece.
      *
      * @param self The reference to itself
-     * @return The actor
+     * @return The actor.
      */
-    protected final AbsActor<T> setSelf(ActorRef<T> self) {
+    protected final Actor<T> setSelf(ActorRef<T> self) {
         this.self = self;
         return this;
     }
 
     /**
-     * Sets the actor system.
-     *
-     * @param system The actor system
-     * @return The actor
+     * Stops actor by closing it's mailbox.
      */
-    protected final AbsActor<T> setActorSystem(ActorSystem system) {
-        this.system = system;
-        return this;
+    final void stop() {
+        mailbox.setClosed();
     }
 
     /**
-     * Puts the {@code message} inside the mailbox of the actor.
+     * Tries to push a message and awake execution if successful.
      *
-     * @param message The message that has to be elaborated
+     * @param message The MailMessage to insert in the Actor's mailbox.
+     * @throws UnsupportedMessageException if message is rejected {@code message}.
      */
-    protected final synchronized void send(T message, ActorRef<T> sender) {
-        this.mailbox.add(new Packet<T>(message, sender));
+    final void pushMailMessage(MailMessage<ActorRef<T>,T> message) throws UnsupportedMessageException {
+        mailbox.push(message);
+        lock.lock();
+        try {
+            emptyMailbox.signalAll();
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**
-     * Returns the next message in the mailbox
+     * Defines the runnable of the AbsActor.
      *
-     * @return A message.
-     *
-     * @throws java.util.NoSuchElementException If the mailbox is empty.
+     * @author Miki Violetto
+     * @version 1.0
+     * @since 1.0
      */
-    protected final synchronized Packet<T> nextMessage() {
-        return this.mailbox.remove();
-    }
+    public class ActorRunnable implements Runnable {
 
-    protected ActorRunnable getTask() {
-        return this.task;
-    }
+        /**
+         * Executes head message.
+         */
+        private void executeMessage() {
+            MailMessage<ActorRef<T>,T> message = mailbox.pop();
+            sender = message.getSender();
+            receive(message.getMessage());
+        }
 
-    /**
-     * Returns {@code true} if the mailbox is empty, {@code false} otherwise.
-     *
-     * @return {@code true} if the mailbox is empty
-     */
-    protected  final synchronized boolean isMailboxEmpty() {
-        return this.mailbox.isEmpty();
-    }
-
-    // TODO Think if the type ActorRunnable should be represented as an internal class of Actor.
-    protected final class ActorRunnable implements Runnable {
-
+        /**
+         * When an object implementing interface <code>Runnable</code> is used
+         * to create a thread, starting the thread causes the object's
+         * <code>run</code> method to be called in that separately executing
+         * thread.
+         * <p>
+         * The general contract of the method <code>run</code> is that it may
+         * take any action whatsoever.
+         *
+         * @see Thread#run()
+         */
         @Override
         public void run() {
-            // Until the mailbox is empty and the thread is not been interrupted
-            while (!Thread.currentThread().isInterrupted() || !isMailboxEmpty()) {
-                try {
-                    Packet<T> packet = nextMessage();
-                    // Retrieve the sender of the message
-                    sender = packet.getSender();
-                    receive(packet.getMessage());
-                } catch (NoSuchElementException nsee) {
-                    // The mailbox is empty: this is not an error
-                    // TODO Log something
+            try {
+                while (mailbox.isOpen()) {
+                    lock.lock();
+                    while (mailbox.isEmpty()) {
+                        emptyMailbox.await();
+                    }
+                    lock.unlock();
+                    executeMessage();
                 }
-            }   // while (true)
-        }
-    }
-
-    /**
-     * Associates each message to the actor reference that sent it.
-     *
-     * @param <T> A type of message.
-     */
-    class Packet<T extends Message> {
-        private final T message;
-        private final ActorRef<T> sender;
-
-        public Packet(T message, ActorRef<T> sender) {
-            this.message = message;
-            this.sender = sender;
-        }
-
-        public T getMessage() {
-            return message;
-        }
-
-        public ActorRef<T> getSender() {
-            return sender;
+            } catch (InterruptedException e) {
+            // TODO Manage interruption
+            } finally {
+                while (!mailbox.isEmpty()) {
+                    executeMessage();
+                }
+            }
         }
     }
 }

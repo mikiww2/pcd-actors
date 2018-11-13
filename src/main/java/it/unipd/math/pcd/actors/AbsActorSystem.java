@@ -21,15 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * <p/>
- * Please, insert description here.
- *
- * @author Riccardo Cardin
- * @version 1.0
- * @since 1.0
- */
-
-/**
- * Please, insert description here.
  *
  * @author Riccardo Cardin
  * @version 1.0
@@ -38,20 +29,14 @@
 package it.unipd.math.pcd.actors;
 
 import it.unipd.math.pcd.actors.exceptions.NoSuchActorException;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * A map-based implementation of the actor system.
  *
  * @author Riccardo Cardin
+ * @author Miki Violetto
  * @version 1.0
  * @since 1.0
  */
@@ -60,19 +45,13 @@ public abstract class AbsActorSystem implements ActorSystem {
     /**
      * Associates every Actor created with an identifier.
      */
-    private Map<ActorRef<?>, ActorInfo> actors;
+    protected Map<ActorRef<?>, Actor<?>> actors;
 
     /**
-     * The executor that manage threads associated to actors
+     * Constructor.
      */
-    private ExecutorService service;
-
-    public AbsActorSystem() {
-        // For now, let the map be synchronized
-        this.actors = Collections.synchronizedMap(new HashMap<ActorRef<?>, ActorInfo>());
-        // Build the executor service
-        // XXX Is it the right policy to use?
-        this.service = Executors.newCachedThreadPool();
+    protected AbsActorSystem () {
+        this.actors = new LinkedHashMap<>();
     }
 
     @Override
@@ -83,31 +62,15 @@ public abstract class AbsActorSystem implements ActorSystem {
         try {
             // Create the reference to the actor
             reference = this.createActorReference(mode);
-            // Create the new instance of the actor and set its actor system
-            AbsActor<?> actorInstance = ((AbsActor) actor.newInstance()).setActorSystem(this).setSelf(reference);
-            // Start the actor
-            ActorInfo info = startActor(actorInstance);
+            // Create the new instance of the actor
+            Actor actorInstance = ((AbsActor) actor.newInstance()).setSelf(reference);
             // Associate the reference to the actor
-            actors.put(reference, info);
+            actors.put(reference, actorInstance);
 
         } catch (InstantiationException | IllegalAccessException e) {
             throw new NoSuchActorException(e);
         }
         return reference;
-    }
-
-    /**
-     * Starts a task for the {@code actor} and returns information to
-     * control the execution
-     *
-     * @param actor
-     *
-     * @return Information to control actor execution
-     */
-    private ActorInfo startActor(AbsActor<?> actor) {
-        AbsActor.ActorRunnable task = actor.getTask();
-        Future<?> future = this.service.submit(task);
-        return new ActorInfo(actor, future);
     }
 
     @Override
@@ -116,74 +79,26 @@ public abstract class AbsActorSystem implements ActorSystem {
     }
 
     /**
-     * Returns the actor implementation that is associated to {@code ref}.
+     * Creates an actor reference.
      *
-     * @param ref A reference to an actor
-     * @return An actor implementation
-     *
-     * @throws NoSuchActorException If {@code ref} is not associated to any actor implementation
+     * @param mode from ActorMode.
+     * @return Reference to an Actor.
+     * @throws IllegalArgumentException If the mode isn't LOCAL
      */
-    Actor<? extends Message> findActor(ActorRef<? extends Message> ref) {
-        return find(ref).getActor();
-    }
+    protected abstract ActorRef createActorReference(ActorMode mode) throws IllegalArgumentException;
 
     /**
-     * Return execution information about {@code ref}.
+     * Returns Actor associated with {@code ref}.
      *
-     * @param ref The reference to the actor
-     * @return Execution information about {@code ref}
-     *
-     * @throws NoSuchActorException If {@code ref} is not associated to any actor implementation
+     * @param ref Reference to the Actor .
+     * @return The Actor referenced by {@code ref}.
+     * @throws NoSuchActorException if actor does not exist in the map {@code actors}.
      */
-    private ActorInfo find(ActorRef<? extends Message> ref) {
-        ActorInfo info = this.actors.get(ref);
-        if (info == null) {
-            throw new NoSuchActorException("No actor found with reference " + ref.hashCode());
-        }
-        return info;
-    }
-
-    protected abstract ActorRef createActorReference(ActorMode mode);
-
-    @Override
-    public void stop(ActorRef<?> actor) {
-        // Stopping an actor means to remove it from the map. This guarantees that no
-        // new message will be sent to the actor
-        ActorInfo info = this.find(actor);
-        // Also, the actor task must be stopped
-        info.stop();
-        this.actors.remove(actor);
-    }
-
-    @Override
-    public void stop() {
-        // Stop each actor
-        Iterator<ActorRef<?>> it = this.actors.keySet().iterator();
-        while (it.hasNext()) {
-            stop(it.next());
-            it = this.actors.keySet().iterator();
-        }
-        this.actors.clear();
-    }
-
-    class ActorInfo {
-        private Actor<?> actor;
-        private Future<?> future;
-
-        public ActorInfo(Actor<?> actor, Future<?> future) {
-            this.actor = actor;
-            this.future = future;
-        }
-
-        public Actor<?> getActor() {
+    protected final Actor getActor(ActorRef ref) throws NoSuchActorException {
+        Actor actor = actors.get(ref);
+        if (actor != null)
             return actor;
-        }
-
-        /**
-         * Tries to cancel the future associated to actor's execution
-         */
-        public void stop() {
-            this.future.cancel(true);
-        }
+        else
+            throw new NoSuchActorException();
     }
 }

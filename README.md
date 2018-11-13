@@ -1,4 +1,9 @@
 # pcd-actors
+
+Progetto didattico individuale per il corso di "Programmazione concorrente e distribuita" del terzo anno della laurea triennale in informatica dell'Università degli studi di Padova.
+
+#Istruzioni del progetto
+
 A mock system that abstract a simplified implementation of the [actor model](https://en.wikipedia.org/wiki/Actor_model). 
 The system has to be considered as a mock because the main components are intentionally left abstract.
 

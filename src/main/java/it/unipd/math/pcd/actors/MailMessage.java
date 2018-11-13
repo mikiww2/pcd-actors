@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  * <p/>
- * Copyright (c) 2016 Riccardo Cardin
+ * Copyright (c) 2016 Andrea Faggin
  * <p/>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,35 +22,34 @@
  * SOFTWARE.
  * <p/>
  *
- * @author Riccardo Cardin
+ * @author Miki Violetto
  * @version 1.0
  * @since 1.0
  */
-
-package it.unipd.math.pcd.actors.exceptions;
+package it.unipd.math.pcd.actors;
 
 /**
- * Thrown to indicate an error during the creation of a new actor of unknown type in a specified
- * {@link it.unipd.math.pcd.actors.ActorSystem actor system}.
+ * Represents message pair.
  *
- * @author Riccardo Cardin
+ * @author Miki Violetto
  * @version 1.0
  * @since 1.0
+ * @param <T> Type of the sender.
+ * @param <U> Type of the message.
  */
-public class NoSuchActorException extends RuntimeException {
+public interface MailMessage<T,U> {
 
-    public NoSuchActorException() {
-    }
+    /**
+     * Returns the sender of the MailMessage.
+     *
+     * @return The sender.
+     */
+    T getSender();
 
-    public NoSuchActorException(String message) {
-        super(message);
-    }
-
-    public NoSuchActorException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public NoSuchActorException(Throwable cause) {
-        super(cause);
-    }
+    /**
+     * Returns the the message of the MailMessage.
+     *
+     * @return The message.
+     */
+    U getMessage();
 }

@@ -22,35 +22,27 @@
  * SOFTWARE.
  * <p/>
  *
- * @author Riccardo Cardin
+ * @author Miki Violetto
  * @version 1.0
  * @since 1.0
  */
-
 package it.unipd.math.pcd.actors.exceptions;
 
+import it.unipd.math.pcd.actors.Message;
+
 /**
- * Thrown to indicate an error during the creation of a new actor of unknown type in a specified
- * {@link it.unipd.math.pcd.actors.ActorSystem actor system}.
+ * Thrown to indicate that the Mailbox is close and the MailMessage cannot be push in the mailbox.
  *
- * @author Riccardo Cardin
+ * @author Miki Violetto
  * @version 1.0
  * @since 1.0
  */
-public class NoSuchActorException extends RuntimeException {
+public class ClosedMailboxException extends RuntimeException {
 
-    public NoSuchActorException() {
+    private Class <? extends Message> clazz;
+
+    public ClosedMailboxException(Class <? extends Message> clazz) {
+        this.clazz = clazz;
     }
 
-    public NoSuchActorException(String message) {
-        super(message);
-    }
-
-    public NoSuchActorException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public NoSuchActorException(Throwable cause) {
-        super(cause);
-    }
 }

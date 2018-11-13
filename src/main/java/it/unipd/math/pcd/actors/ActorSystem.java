@@ -21,20 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * <p/>
- * Please, insert description here.
  *
  * @author Riccardo Cardin
  * @version 1.0
  * @since 1.0
  */
 
-/**
- * Please, insert description here.
- *
- * @author Riccardo Cardin
- * @version 1.0
- * @since 1.0
- */
 package it.unipd.math.pcd.actors;
 
 /**
@@ -69,13 +61,9 @@ public interface ActorSystem {
     ActorRef<? extends Message> actorOf(Class<? extends Actor> actor);
 
     /**
-     * Stops gracefully the {@code actor}, which means that an actor has to process the messages that are already
-     * present in the mailbox before stopping.
+     * Stops {@code actor}.
      *
      * @param actor The actor to be stopped
-     *
-     * @throws it.unipd.math.pcd.actors.exceptions.NoSuchActorException if {@code actor} does not exist or it was
-     *         already been stopped
      */
     void stop(ActorRef<?> actor);
 
